@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { adaptImageToSize } from "@/lib/imageUtils";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 export default function Home() {
   const [imageFile, setImageFile] = useState(null);
@@ -108,6 +110,54 @@ export default function Home() {
     setResults(prev => ({ ...prev, [platform]: text }));
   };
 
+  const handleCopyText = async (text) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error("Fallo al copiar", err);
+    }
+  };
+
+  const handleDownloadImage = (base64, platform) => {
+    if (!base64) return;
+    const link = document.createElement("a");
+    link.href = base64;
+    link.download = `${platform}_image.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportZip = async () => {
+    if (!results) return;
+    try {
+      const zip = new JSZip();
+      
+      const imgFolder = zip.folder("images");
+      if (adaptedImages) {
+        Object.entries(adaptedImages).forEach(([platform, base64]) => {
+          if (base64) {
+            const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
+            imgFolder.file(`${platform}.jpg`, base64Data, {base64: true});
+          }
+        });
+      }
+
+      let textsContent = "";
+      Object.entries(results).forEach(([platform, text]) => {
+        textsContent += `=== ${platform.toUpperCase()} ===\n\n${text}\n\n\n`;
+      });
+      zip.file("posts.txt", textsContent);
+
+      const content = await zip.generateAsync({type: "blob"});
+      saveAs(content, "social_posts.zip");
+    } catch (error) {
+      console.error("Error creando ZIP:", error);
+      alert("Hubo un error al exportar el ZIP");
+    }
+  };
+
   return (
     <div className="container">
       <header className="header">
@@ -173,6 +223,14 @@ export default function Home() {
                     value={results.instagram}
                     onChange={(e) => handleTextChange('instagram', e.target.value)}
                   />
+                  <div className="action-buttons">
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleDownloadImage(adaptedImages?.instagram, 'instagram')} disabled={!adaptedImages?.instagram}>
+                      Descargar Imagen
+                    </button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleCopyText(results.instagram)}>
+                      Copiar Texto
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -189,6 +247,14 @@ export default function Home() {
                     value={results.facebook}
                     onChange={(e) => handleTextChange('facebook', e.target.value)}
                   />
+                  <div className="action-buttons">
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleDownloadImage(adaptedImages?.facebook, 'facebook')} disabled={!adaptedImages?.facebook}>
+                      Descargar Imagen
+                    </button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleCopyText(results.facebook)}>
+                      Copiar Texto
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -205,6 +271,14 @@ export default function Home() {
                     value={results.tiktok}
                     onChange={(e) => handleTextChange('tiktok', e.target.value)}
                   />
+                  <div className="action-buttons">
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleDownloadImage(adaptedImages?.tiktok, 'tiktok')} disabled={!adaptedImages?.tiktok}>
+                      Descargar Imagen
+                    </button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleCopyText(results.tiktok)}>
+                      Copiar Texto
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -221,12 +295,25 @@ export default function Home() {
                     value={results.x}
                     onChange={(e) => handleTextChange('x', e.target.value)}
                   />
+                  <div className="action-buttons">
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleDownloadImage(adaptedImages?.x, 'x')} disabled={!adaptedImages?.x}>
+                      Descargar Imagen
+                    </button>
+                    <button className="btn btn-sm btn-secondary" onClick={() => handleCopyText(results.x)}>
+                      Copiar Texto
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <button className="btn" onClick={handlePublish} style={{background: 'var(--foreground)', color: 'var(--background)'}}>
-                {publishStatus || "Enviar a n8n"}
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button className="btn" onClick={handleExportZip} style={{background: 'var(--surface)', color: 'var(--foreground)', border: '1px solid var(--border)'}}>
+                  Exportar Todo (ZIP)
+                </button>
+                <button className="btn" onClick={handlePublish} style={{background: 'var(--foreground)', color: 'var(--background)'}}>
+                  {publishStatus || "Enviar a n8n"}
+                </button>
+              </div>
             </>
           ) : (
             <div className="card" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-muted)'}}>
