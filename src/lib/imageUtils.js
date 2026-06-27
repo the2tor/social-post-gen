@@ -24,50 +24,25 @@ export const adaptImageToSize = (imageBase64, targetWidth, targetHeight) => {
       const imgAspect = img.width / img.height;
       const targetAspect = targetWidth / targetHeight;
 
-      // 1. Dibujar el fondo desenfocado (cover)
-      let bgDrawWidth = targetWidth;
-      let bgDrawHeight = targetHeight;
-      let bgOffsetX = 0;
-      let bgOffsetY = 0;
+      let drawWidth = targetWidth;
+      let drawHeight = targetHeight;
+      let offsetX = 0;
+      let offsetY = 0;
 
       if (imgAspect > targetAspect) {
-        // La imagen es más ancha que el objetivo
-        bgDrawHeight = targetWidth / imgAspect;
-        bgDrawWidth = targetWidth; // Fill width, but actually we need to COVER height too
-        // To cover:
-        bgDrawWidth = targetHeight * imgAspect;
-        bgDrawHeight = targetHeight;
-        bgOffsetX = (targetWidth - bgDrawWidth) / 2;
+        // La imagen es más ancha: escalar en base al alto y centrar horizontalmente (recortar lados)
+        drawWidth = targetHeight * imgAspect;
+        drawHeight = targetHeight;
+        offsetX = (targetWidth - drawWidth) / 2;
       } else {
-        // La imagen es más alta que el objetivo
-        bgDrawWidth = targetWidth;
-        bgDrawHeight = targetWidth / imgAspect;
-        bgOffsetY = (targetHeight - bgDrawHeight) / 2;
+        // La imagen es más alta: escalar en base al ancho y centrar verticalmente (recortar arriba/abajo)
+        drawWidth = targetWidth;
+        drawHeight = targetWidth / imgAspect;
+        offsetY = (targetHeight - drawHeight) / 2;
       }
 
-      ctx.save();
-      // Aplicar filtro de desenfoque y oscurecimiento para el fondo
-      ctx.filter = "blur(20px) brightness(0.6)";
-      ctx.drawImage(img, bgOffsetX, bgOffsetY, bgDrawWidth, bgDrawHeight);
-      ctx.restore();
-
-      // 2. Dibujar la imagen principal centrada (contain)
-      let mainDrawWidth = targetWidth;
-      let mainDrawHeight = targetHeight;
-      let mainOffsetX = 0;
-      let mainOffsetY = 0;
-
-      if (imgAspect > targetAspect) {
-        // La imagen es más ancha (se ajusta al ancho y sobra alto)
-        mainDrawHeight = targetWidth / imgAspect;
-        mainOffsetY = (targetHeight - mainDrawHeight) / 2;
-      } else {
-        // La imagen es más alta (se ajusta al alto y sobra ancho)
-        mainDrawWidth = targetHeight * imgAspect;
-        mainOffsetX = (targetWidth - mainDrawWidth) / 2;
-      }
-
-      ctx.drawImage(img, mainOffsetX, mainOffsetY, mainDrawWidth, mainDrawHeight);
+      // Dibujar la imagen recortada (cover)
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
       // Devolver como Data URL
       resolve(canvas.toDataURL("image/jpeg", 0.9));
