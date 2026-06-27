@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  social-post-gen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: social-post-gen-app
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      # - OPENAI_API_KEY=your_key_here
+      # - N8N_WEBHOOK_URL=http://n8n-container:5678/webhook/social-post

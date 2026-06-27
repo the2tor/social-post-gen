@@ -1,0 +1,128 @@
+{
+  "name": "Publicador Autónomo Redes Sociales",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "social-post",
+        "options": {}
+      },
+      "id": "e4a3b839-5a1e-450f-a9ea-9cf8f7f2b1c4",
+      "name": "Webhook Inicial",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "9d91f278-df0e-4367-bf0e-5a50d2688b75"
+    },
+    {
+      "parameters": {
+        "action": "binary",
+        "options": {}
+      },
+      "id": "fe9a4258-2c26-4b68-b8d4-539c14828b18",
+      "name": "Base64 to Binary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ],
+      "notes": "Convierte la imagen para las redes"
+    },
+    {
+      "parameters": {
+        "pageId": "your_page_id",
+        "text": "={{ $json.body.facebook_post }}"
+      },
+      "id": "278e9b62-1d54-4f0f-ab51-86a0f443b749",
+      "name": "Facebook Pages",
+      "type": "n8n-nodes-base.facebookPages",
+      "typeVersion": 1,
+      "position": [
+        700,
+        150
+      ],
+      "notes": "Requiere Credenciales"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "accountId": "your_account_id",
+        "imageUrl": "={{ $json.body.image_url_or_binary }}",
+        "caption": "={{ $json.body.instagram_post }}"
+      },
+      "id": "bd05322b-df55-4a25-a6e3-f54f67d2642a",
+      "name": "Instagram for Business",
+      "type": "n8n-nodes-base.instagramBusiness",
+      "typeVersion": 1,
+      "position": [
+        700,
+        350
+      ],
+      "notes": "Requiere Credenciales"
+    },
+    {
+      "parameters": {
+        "url": "https://open-api.tiktok.com/share/video/upload/",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.body.tiktok_post }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "18f50444-1294-4d2c-af35-c3f253ad507f",
+      "name": "TikTok (Custom)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        700,
+        550
+      ],
+      "notes": "Requiere API TikTok"
+    }
+  ],
+  "connections": {
+    "Webhook Inicial": {
+      "main": [
+        [
+          {
+            "node": "Base64 to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 to Binary": {
+      "main": [
+        [
+          {
+            "node": "Facebook Pages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram for Business",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TikTok (Custom)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
