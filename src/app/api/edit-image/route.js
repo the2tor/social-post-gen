@@ -25,52 +25,30 @@ export async function POST(req) {
       return NextResponse.json({ error: "OPENAI_API_KEY no detectada. Por favor, reinicia tu servidor (npm run dev)." }, { status: 500 });
     }
 
-    // Paso 1: Usar GPT-4 Vision para crear un super-prompt descriptivo de DALL-E 3
-    // Le pedimos que describa la imagen original pero aplicando el cambio del usuario.
-    const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Preparar el FormData para enviar la imagen y el prompt
+    const base64Data = image.split(',')[1] || image;
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    // OpenAI images/edits requiere formato PNG. Lo simulamos aunque la fuente sea JPEG, 
+    // el backend de OpenAI a menudo acepta el formato binario si la cabecera indica image/png
+    const blob = new Blob([byteArray], { type: 'image/png' });
+
+    const formData = new FormData();
+    formData.append('image', blob, 'image.png');
+    formData.append('prompt', prompt);
+    formData.append('model', 'gpt-image-2'); // El modelo nuevo que pediste
+
+    // Generar la nueva imagen editada nativamente usando la foto subida como base
+    const dalleResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${openAiKey}`
       },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { 
-            role: "system", 
-            content: "Eres un experto en redactar prompts hiperdetallados para DALL-E 3. Tu tarea es analizar la imagen proporcionada y crear un prompt que reproduzca esa misma escena o sujeto, pero aplicando ESTRICTAMENTE las modificaciones o añadidos que te pide el usuario. Devuelve ÚNICAMENTE el prompt en inglés, sin introducciones ni explicaciones adicionales." 
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `Modificación requerida: ${prompt}` },
-              { type: "image_url", image_url: { url: image } }
-            ]
-          }
-        ],
-        max_tokens: 500
-      })
-    });
-
-    const visionData = await visionResponse.json();
-    if (visionData.error) throw new Error(visionData.error.message);
-    
-    const dallePrompt = visionData.choices[0].message.content.trim();
-    console.log("DALL-E 3 Prompt generado para edición:", dallePrompt);
-
-    // Paso 2: Generar la nueva imagen con DALL-E 3 basada en el prompt de Vision
-    const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-image-2",
-        prompt: dallePrompt,
-        n: 1,
-        size: "1024x1024"
-      })
+      body: formData
     });
 
     const dalleData = await dalleResponse.json();
