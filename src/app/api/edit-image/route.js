@@ -66,7 +66,7 @@ export async function POST(req) {
         "Authorization": `Bearer ${openAiKey}`
       },
       body: JSON.stringify({
-        model: "dall-e-3",
+        model: "gpt-image-2",
         prompt: dallePrompt,
         n: 1,
         size: "1024x1024"
@@ -80,11 +80,16 @@ export async function POST(req) {
       throw new Error("No se pudo generar la imagen modificada");
     }
 
-    const imageUrl = dalleData.data[0].url;
-    const imgResponse = await fetch(imageUrl);
-    const arrayBuffer = await imgResponse.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const imageBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+    let imageBase64;
+    if (dalleData.data[0].b64_json) {
+      imageBase64 = `data:image/png;base64,${dalleData.data[0].b64_json}`;
+    } else {
+      const imageUrl = dalleData.data[0].url;
+      const imgResponse = await fetch(imageUrl);
+      const arrayBuffer = await imgResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      imageBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+    }
 
     return NextResponse.json({ imageBase64 });
 
