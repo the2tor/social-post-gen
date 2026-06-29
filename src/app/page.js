@@ -14,6 +14,9 @@ export default function Home() {
   const [publishStatus, setPublishStatus] = useState("");
   const [adaptedImages, setAdaptedImages] = useState(null);
   const [isAdapting, setIsAdapting] = useState(false);
+  
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -23,27 +26,54 @@ export default function Home() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = reader.result;
-        setImagePreview(base64);
-        
-        try {
-          const instagram = await adaptImageToSize(base64, 1080, 1080);
-          const facebook = await adaptImageToSize(base64, 1200, 630);
-          const tiktok = await adaptImageToSize(base64, 1080, 1920);
-          const x = await adaptImageToSize(base64, 1200, 675);
-          
-          setAdaptedImages({
-            instagram,
-            facebook,
-            tiktok,
-            x
-          });
-        } catch (error) {
-          console.error("Error al adaptar imagenes:", error);
-        } finally {
-          setIsAdapting(false);
-        }
+        await processImageBase64(base64);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const processImageBase64 = async (base64) => {
+    setImagePreview(base64);
+    setIsAdapting(true);
+    try {
+      const instagram = await adaptImageToSize(base64, 1080, 1080);
+      const facebook = await adaptImageToSize(base64, 1200, 630);
+      const tiktok = await adaptImageToSize(base64, 1080, 1920);
+      const x = await adaptImageToSize(base64, 1200, 675);
+      
+      setAdaptedImages({
+        instagram,
+        facebook,
+        tiktok,
+        x
+      });
+    } catch (error) {
+      console.error("Error al adaptar imagenes:", error);
+    } finally {
+      setIsAdapting(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) return;
+    setIsGeneratingImage(true);
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: imagePrompt })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        await processImageBase64(data.imageBase64);
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error al generar imagen");
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -167,23 +197,44 @@ export default function Home() {
 
       <main className="main-content">
         <section className="card">
-          <h2>1. Sube tu imagen</h2>
+          <h2>1. Sube o Genera tu imagen</h2>
           
-          <div className="upload-area">
-            <input 
-              type="file" 
-              accept="image/*" 
-              className="upload-input" 
-              onChange={handleImageUpload}
-            />
-            {!imagePreview ? (
-              <div>
-                <p>Haz clic o arrastra una imagen aquí</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>JPG, PNG (Max 5MB)</p>
-              </div>
-            ) : (
-              <img src={imagePreview} alt="Preview" className="preview-image" />
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="upload-area">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="upload-input" 
+                onChange={handleImageUpload}
+              />
+              {!imagePreview ? (
+                <div>
+                  <p>Haz clic o arrastra una imagen aquí</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>JPG, PNG (Max 5MB)</p>
+                </div>
+              ) : (
+                <img src={imagePreview} alt="Preview" className="preview-image" />
+              )}
+            </div>
+
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--background)' }}>
+              <h3>Generar con IA (Gemini)</h3>
+              <textarea 
+                className="form-textarea"
+                placeholder="Describe la imagen que quieres generar..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                style={{ flex: 1, minHeight: '100px' }}
+              />
+              <button 
+                className="btn" 
+                onClick={handleGenerateImage} 
+                disabled={isGeneratingImage || !imagePrompt.trim()}
+                style={{ background: 'var(--foreground)', color: 'var(--background)' }}
+              >
+                {isGeneratingImage ? <span className="spinner"></span> : "Generar Imagen"}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">

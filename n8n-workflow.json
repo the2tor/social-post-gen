@@ -88,6 +88,25 @@
         550
       ],
       "notes": "Requiere API TikTok"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.body.x_post }}",
+        "additionalFields": {
+          "attachments": [
+            "data"
+          ]
+        }
+      },
+      "id": "a4b3d881-8888-4444-9999-e9cf8f7f2b1a",
+      "name": "X (Twitter)",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        700,
+        750
+      ],
+      "notes": "Requiere Credenciales X"
     }
   ],
   "connections": {
@@ -117,6 +136,11 @@
           },
           {
             "node": "TikTok (Custom)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "X (Twitter)",
             "type": "main",
             "index": 0
           }
