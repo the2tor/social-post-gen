@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import fs from 'fs';
+import path from 'path';
+
 export async function POST(req) {
   try {
     const { prompt, image } = await req.json();
@@ -8,12 +11,18 @@ export async function POST(req) {
       return NextResponse.json({ error: "El prompt y la imagen son requeridos" }, { status: 400 });
     }
 
-    const openAiKey = process.env.OPENAI_API_KEY;
+    let openAiKey = process.env.OPENAI_API_KEY;
+    if (!openAiKey) {
+      try {
+        const envPath = path.join(process.cwd(), '.env.local');
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const match = envContent.match(/OPENAI_API_KEY=(.*)/);
+        if (match) openAiKey = match[1].trim();
+      } catch (e) {}
+    }
     
     if (!openAiKey) {
-      console.warn("OPENAI_API_KEY no configurada, usando mock de edición.");
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return NextResponse.json({ imageBase64: image });
+      return NextResponse.json({ error: "OPENAI_API_KEY no detectada. Por favor, reinicia tu servidor (npm run dev)." }, { status: 500 });
     }
 
     // Paso 1: Usar GPT-4 Vision para crear un super-prompt descriptivo de DALL-E 3

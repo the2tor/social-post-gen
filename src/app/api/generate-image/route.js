@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import fs from 'fs';
+import path from 'path';
+
 export async function POST(req) {
   try {
     const { prompt } = await req.json();
@@ -8,13 +11,18 @@ export async function POST(req) {
       return NextResponse.json({ error: "El prompt de imagen es requerido" }, { status: 400 });
     }
 
-    const openAiKey = process.env.OPENAI_API_KEY;
+    let openAiKey = process.env.OPENAI_API_KEY;
+    if (!openAiKey) {
+      try {
+        const envPath = path.join(process.cwd(), '.env.local');
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const match = envContent.match(/OPENAI_API_KEY=(.*)/);
+        if (match) openAiKey = match[1].trim();
+      } catch (e) {}
+    }
     
     if (!openAiKey) {
-      console.warn("OPENAI_API_KEY no configurada, usando mock de generación de imagen.");
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const mockImageBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==";
-      return NextResponse.json({ imageBase64: mockImageBase64 });
+      return NextResponse.json({ error: "OPENAI_API_KEY no detectada. Por favor, reinicia tu servidor (npm run dev)." }, { status: 500 });
     }
 
     const response = await fetch("https://api.openai.com/v1/images/generations", {
