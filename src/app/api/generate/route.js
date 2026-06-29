@@ -73,14 +73,15 @@ export async function POST(req) {
                 { type: "image_url", image_url: { url: image } }
               ]
             }
-          ],
-          response_format: { type: "json_object" }
+          ]
         })
       });
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
-      generatedTexts = JSON.parse(data.choices[0].message.content);
+      
+      const rawText = data.choices[0].message.content;
+      generatedTexts = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
     } else {
       // Mock de respuesta para pruebas de UI
