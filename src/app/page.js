@@ -18,6 +18,10 @@ export default function Home() {
   const [imagePrompt, setImagePrompt] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
+  const [activeTab, setActiveTab] = useState('upload'); // 'upload', 'generate', 'edit'
+  const [editPrompt, setEditPrompt] = useState("");
+  const [isEditingImage, setIsEditingImage] = useState(false);
+
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -74,6 +78,30 @@ export default function Home() {
       alert("Error al generar imagen");
     } finally {
       setIsGeneratingImage(false);
+    }
+  };
+
+  const handleEditImage = async () => {
+    if (!editPrompt.trim() || !imagePreview) return;
+    setIsEditingImage(true);
+    try {
+      const response = await fetch("/api/edit-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: editPrompt, image: imagePreview })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        await processImageBase64(data.imageBase64);
+        setEditPrompt(""); // Limpiar prompt
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error al editar imagen");
+    } finally {
+      setIsEditingImage(false);
     }
   };
 
@@ -197,43 +225,99 @@ export default function Home() {
 
       <main className="main-content">
         <section className="card">
-          <h2>1. Sube o Genera tu imagen</h2>
+          <h2>1. Imagen Principal</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="upload-area">
-              <input 
-                type="file" 
-                accept="image/*" 
-                className="upload-input" 
-                onChange={handleImageUpload}
-              />
-              {!imagePreview ? (
-                <div>
-                  <p>Haz clic o arrastra una imagen aquí</p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>JPG, PNG (Max 5MB)</p>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+            <button 
+              className={`btn btn-sm ${activeTab === 'upload' ? 'btn-secondary' : ''}`}
+              style={{ background: activeTab === 'upload' ? 'var(--foreground)' : 'transparent', color: activeTab === 'upload' ? 'var(--background)' : 'var(--foreground)' }}
+              onClick={() => setActiveTab('upload')}
+            >
+              Subir
+            </button>
+            <button 
+              className={`btn btn-sm ${activeTab === 'generate' ? 'btn-secondary' : ''}`}
+              style={{ background: activeTab === 'generate' ? 'var(--foreground)' : 'transparent', color: activeTab === 'generate' ? 'var(--background)' : 'var(--foreground)' }}
+              onClick={() => setActiveTab('generate')}
+            >
+              Generar (0)
+            </button>
+            <button 
+              className={`btn btn-sm ${activeTab === 'edit' ? 'btn-secondary' : ''}`}
+              style={{ background: activeTab === 'edit' ? 'var(--foreground)' : 'transparent', color: activeTab === 'edit' ? 'var(--background)' : 'var(--foreground)' }}
+              onClick={() => setActiveTab('edit')}
+              disabled={!imagePreview}
+            >
+              Modificar
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* Panel Izquierdo: Acciones */}
+            <div>
+              {activeTab === 'upload' && (
+                <div className="upload-area" style={{ height: '100%' }}>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="upload-input" 
+                    onChange={handleImageUpload}
+                  />
+                  <div>
+                    <p>Haz clic o arrastra una imagen aquí</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>JPG, PNG (Max 5MB)</p>
+                  </div>
                 </div>
-              ) : (
-                <img src={imagePreview} alt="Preview" className="preview-image" />
+              )}
+
+              {activeTab === 'generate' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+                  <textarea 
+                    className="form-textarea"
+                    placeholder="Describe la imagen que quieres crear desde cero..."
+                    value={imagePrompt}
+                    onChange={(e) => setImagePrompt(e.target.value)}
+                    style={{ flex: 1, minHeight: '120px' }}
+                  />
+                  <button 
+                    className="btn" 
+                    onClick={handleGenerateImage} 
+                    disabled={isGeneratingImage || !imagePrompt.trim()}
+                    style={{ background: 'var(--foreground)', color: 'var(--background)' }}
+                  >
+                    {isGeneratingImage ? <span className="spinner"></span> : "Generar con Gemini"}
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'edit' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+                  <textarea 
+                    className="form-textarea"
+                    placeholder="Escribe qué quieres cambiar de la foto actual..."
+                    value={editPrompt}
+                    onChange={(e) => setEditPrompt(e.target.value)}
+                    style={{ flex: 1, minHeight: '120px' }}
+                  />
+                  <button 
+                    className="btn" 
+                    onClick={handleEditImage} 
+                    disabled={isEditingImage || !editPrompt.trim() || !imagePreview}
+                    style={{ background: 'var(--foreground)', color: 'var(--background)' }}
+                  >
+                    {isEditingImage ? <span className="spinner"></span> : "Modificar con Gemini"}
+                  </button>
+                </div>
               )}
             </div>
 
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--background)' }}>
-              <h3>Generar con IA (Gemini)</h3>
-              <textarea 
-                className="form-textarea"
-                placeholder="Describe la imagen que quieres generar..."
-                value={imagePrompt}
-                onChange={(e) => setImagePrompt(e.target.value)}
-                style={{ flex: 1, minHeight: '100px' }}
-              />
-              <button 
-                className="btn" 
-                onClick={handleGenerateImage} 
-                disabled={isGeneratingImage || !imagePrompt.trim()}
-                style={{ background: 'var(--foreground)', color: 'var(--background)' }}
-              >
-                {isGeneratingImage ? <span className="spinner"></span> : "Generar Imagen"}
-              </button>
+            {/* Panel Derecho: Previsualización */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', borderRadius: '0.5rem', background: 'var(--surface)', padding: '1rem', minHeight: '200px' }}>
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="preview-image" style={{ maxHeight: '300px', width: 'auto', objectFit: 'contain' }} />
+              ) : (
+                <p style={{ color: 'var(--text-muted)' }}>La imagen seleccionada aparecerá aquí</p>
+              )}
             </div>
           </div>
 
