@@ -285,7 +285,7 @@ export default function Home() {
                     disabled={isGeneratingImage || !imagePrompt.trim()}
                     style={{ background: 'var(--foreground)', color: 'var(--background)' }}
                   >
-                    {isGeneratingImage ? <span className="spinner"></span> : "Generar con Gemini"}
+                    {isGeneratingImage ? <span className="spinner"></span> : "Generar con IA (DALL-E)"}
                   </button>
                 </div>
               )}
@@ -305,7 +305,7 @@ export default function Home() {
                     disabled={isEditingImage || !editPrompt.trim() || !imagePreview}
                     style={{ background: 'var(--foreground)', color: 'var(--background)' }}
                   >
-                    {isEditingImage ? <span className="spinner"></span> : "Modificar con Gemini"}
+                    {isEditingImage ? <span className="spinner"></span> : "Modificar con IA (GPT-4V + DALL-E)"}
                   </button>
                 </div>
               )}

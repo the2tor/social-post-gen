@@ -8,70 +8,77 @@ export async function POST(req) {
       return NextResponse.json({ error: "El prompt y la imagen son requeridos" }, { status: 400 });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const openAiKey = process.env.OPENAI_API_KEY;
     
-    if (!geminiKey) {
-      console.warn("GEMINI_API_KEY no configurada, usando mock de edición de imagen.");
+    if (!openAiKey) {
+      console.warn("OPENAI_API_KEY no configurada, usando mock de edición.");
       await new Promise(resolve => setTimeout(resolve, 2000));
       return NextResponse.json({ imageBase64: image });
     }
 
-    const base64Data = image.split(',')[1] || image;
-    const mimeMatch = image.match(/:(.*?);/);
-    const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+    // Paso 1: Usar GPT-4 Vision para crear un super-prompt descriptivo de DALL-E 3
+    // Le pedimos que describa la imagen original pero aplicando el cambio del usuario.
+    const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openAiKey}`
       },
       body: JSON.stringify({
-        contents: [
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: "Eres un experto en redactar prompts hiperdetallados para DALL-E 3. Tu tarea es analizar la imagen proporcionada y crear un prompt que reproduzca esa misma escena o sujeto, pero aplicando ESTRICTAMENTE las modificaciones o añadidos que te pide el usuario. Devuelve ÚNICAMENTE el prompt en inglés, sin introducciones ni explicaciones adicionales." 
+          },
           {
             role: "user",
-            parts: [
-              { text: prompt + " . Aplica estas modificaciones a la imagen proporcionada y devuelve solo la imagen resultante." },
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Data
-                }
-              }
+            content: [
+              { type: "text", text: `Modificación requerida: ${prompt}` },
+              { type: "image_url", image_url: { url: image } }
             ]
           }
-        ]
+        ],
+        max_tokens: 500
       })
     });
 
-    const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
+    const visionData = await visionResponse.json();
+    if (visionData.error) throw new Error(visionData.error.message);
     
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error("No se pudo modificar la imagen");
-    }
+    const dallePrompt = visionData.choices[0].message.content.trim();
+    console.log("DALL-E 3 Prompt generado para edición:", dallePrompt);
 
-    const parts = data.candidates[0].content.parts;
-    let resultB64Data = null;
-    let resultMimeType = "image/jpeg";
+    // Paso 2: Generar la nueva imagen con DALL-E 3 basada en el prompt de Vision
+    const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openAiKey}`
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: dallePrompt,
+        n: 1,
+        size: "1024x1024",
+        response_format: "b64_json"
+      })
+    });
+
+    const dalleData = await dalleResponse.json();
+    if (dalleData.error) throw new Error(dalleData.error.message);
     
-    for (const part of parts) {
-      if (part.inlineData) {
-        resultB64Data = part.inlineData.data;
-        resultMimeType = part.inlineData.mimeType || resultMimeType;
-        break;
-      }
+    if (!dalleData.data || dalleData.data.length === 0) {
+      throw new Error("No se pudo generar la imagen modificada");
     }
 
-    if (!resultB64Data) {
-      throw new Error("El modelo no devolvió una imagen modificada válida");
-    }
-
-    const imageBase64 = `data:${resultMimeType};base64,${resultB64Data}`;
+    const b64Data = dalleData.data[0].b64_json;
+    const imageBase64 = `data:image/png;base64,${b64Data}`;
 
     return NextResponse.json({ imageBase64 });
 
   } catch (error) {
-    console.error("Error al editar imagen con Gemini:", error);
+    console.error("Error al editar imagen con OpenAI:", error);
     return NextResponse.json({ error: error.message || "Error interno del servidor al editar" }, { status: 500 });
   }
 }
