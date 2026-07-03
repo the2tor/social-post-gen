@@ -1,152 +1,216 @@
 {
-  "name": "Publicador Autónomo Redes Sociales",
+  "id": "xuEJzp4e0mckKcDg",
+  "name": "Social Post Publisher - 4 Redes Sociales",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "social-post",
+        "path": "publicar-redes",
+        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "e4a3b839-5a1e-450f-a9ea-9cf8f7f2b1c4",
-      "name": "Webhook Inicial",
+      "id": "webhook-001",
+      "name": "Webhook - Recibir Posts",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
-      "position": [
-        200,
-        300
-      ],
-      "webhookId": "9d91f278-df0e-4367-bf0e-5a50d2688b75"
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "publicar-redes"
     },
     {
       "parameters": {
-        "action": "binary",
-        "options": {}
-      },
-      "id": "fe9a4258-2c26-4b68-b8d4-539c14828b18",
-      "name": "Base64 to Binary",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 1,
-      "position": [
-        400,
-        300
-      ],
-      "notes": "Convierte la imagen para las redes"
-    },
-    {
-      "parameters": {
-        "pageId": "your_page_id",
-        "text": "={{ $json.body.facebook_post }}"
-      },
-      "id": "278e9b62-1d54-4f0f-ab51-86a0f443b749",
-      "name": "Facebook Pages",
-      "type": "n8n-nodes-base.facebookPages",
-      "typeVersion": 1,
-      "position": [
-        700,
-        150
-      ],
-      "notes": "Requiere Credenciales"
-    },
-    {
-      "parameters": {
-        "operation": "create",
-        "accountId": "your_account_id",
-        "imageUrl": "={{ $json.body.image_url_or_binary }}",
-        "caption": "={{ $json.body.instagram_post }}"
-      },
-      "id": "bd05322b-df55-4a25-a6e3-f54f67d2642a",
-      "name": "Instagram for Business",
-      "type": "n8n-nodes-base.instagramBusiness",
-      "typeVersion": 1,
-      "position": [
-        700,
-        350
-      ],
-      "notes": "Requiere Credenciales"
-    },
-    {
-      "parameters": {
-        "url": "https://open-api.tiktok.com/share/video/upload/",
-        "method": "POST",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "text",
-              "value": "={{ $json.body.tiktok_post }}"
-            }
+        "assignments": {
+          "assignments": [
+            {"id": "f1", "name": "instagram_post", "value": "={{ $json.body.instagram_post }}", "type": "string"},
+            {"id": "f2", "name": "facebook_post", "value": "={{ $json.body.facebook_post }}", "type": "string"},
+            {"id": "f3", "name": "tiktok_post", "value": "={{ $json.body.tiktok_post }}", "type": "string"},
+            {"id": "f4", "name": "x_post", "value": "={{ $json.body.x_post }}", "type": "string"},
+            {"id": "f5", "name": "instagram_image_url", "value": "={{ $json.body.instagram_image_url }}", "type": "string"},
+            {"id": "f6", "name": "facebook_image_url", "value": "={{ $json.body.facebook_image_url }}", "type": "string"},
+            {"id": "f7", "name": "tiktok_image_url", "value": "={{ $json.body.tiktok_image_url }}", "type": "string"},
+            {"id": "f8", "name": "x_image_url", "value": "={{ $json.body.x_image_url }}", "type": "string"},
+            {"id": "f9", "name": "batch_id", "value": "={{ $json.body.batch_id }}", "type": "string"}
           ]
         },
         "options": {}
       },
-      "id": "18f50444-1294-4d2c-af35-c3f253ad507f",
-      "name": "TikTok (Custom)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 3,
-      "position": [
-        700,
-        550
-      ],
-      "notes": "Requiere API TikTok"
+      "id": "set-fields-001",
+      "name": "Extraer Campos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 400]
+    },
+    {
+      "parameters": {},
+      "id": "noop-split-001",
+      "name": "Distribuir a Redes",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [640, 400]
     },
     {
       "parameters": {
-        "text": "={{ $json.body.x_post }}",
-        "additionalFields": {
-          "attachments": [
-            "data"
-          ]
-        }
+        "method": "POST",
+        "url": "https://graph.facebook.com/v23.0/{TU_PAGE_ID}/photos",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.facebook_image_url }}\",\n  \"message\": {{ JSON.stringify($json.facebook_post) }},\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "options": {"timeout": 30000}
       },
-      "id": "a4b3d881-8888-4444-9999-e9cf8f7f2b1a",
-      "name": "X (Twitter)",
-      "type": "n8n-nodes-base.twitter",
-      "typeVersion": 2,
-      "position": [
-        700,
-        750
-      ],
-      "notes": "Requiere Credenciales X"
+      "id": "facebook-post-001",
+      "name": "Facebook - Publicar con Foto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 100],
+      "notes": "CONFIGURAR:\n1. Reemplaza {TU_PAGE_ID} por tu Facebook Page ID\n2. Reemplaza {TU_PAGE_ACCESS_TOKEN} por tu Page Access Token\n\nPermisos: pages_manage_posts, pages_read_engagement\nObtener en: https://developers.facebook.com/tools/explorer/"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v23.0/{TU_IG_BUSINESS_ID}/media",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"image_url\": \"{{ $json.instagram_image_url }}\",\n  \"caption\": {{ JSON.stringify($json.instagram_post) }},\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "options": {"timeout": 30000}
+      },
+      "id": "ig-container-001",
+      "name": "Instagram - Crear Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 340],
+      "notes": "PASO 1/3 Instagram.\nReemplaza {TU_IG_BUSINESS_ID} y {TU_PAGE_ACCESS_TOKEN}\n\nPermisos: instagram_basic, instagram_content_publish\n\nObtener IG Business ID:\nGET /me/accounts -> Page ID\nGET /{page-id}?fields=instagram_business_account"
+    },
+    {
+      "parameters": {
+        "amount": 20,
+        "unit": "seconds"
+      },
+      "id": "wait-ig-001",
+      "name": "Esperar 20s (IG procesa)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1140, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v23.0/{TU_IG_BUSINESS_ID}/media_publish",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"creation_id\": \"{{ $('Instagram - Crear Container').item.json.id }}\",\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "options": {"timeout": 30000}
+      },
+      "id": "ig-publish-001",
+      "name": "Instagram - Publicar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 340],
+      "notes": "PASO 3/3 Instagram.\nPublica el container creado en el paso 1."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/content/init/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer {TU_TIKTOK_ACCESS_TOKEN}"},
+            {"name": "Content-Type", "value": "application/json; charset=UTF-8"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post_info\": {\n    \"title\": {{ JSON.stringify($json.tiktok_post.substring(0, 150)) }},\n    \"description\": {{ JSON.stringify($json.tiktok_post) }},\n    \"disable_comment\": false,\n    \"privacy_level\": \"SELF_ONLY\",\n    \"auto_add_music\": true\n  },\n  \"source_info\": {\n    \"source\": \"PULL_FROM_URL\",\n    \"photo_images\": [\n      \"{{ $json.tiktok_image_url }}\"\n    ]\n  },\n  \"media_type\": \"PHOTO\"\n}",
+        "options": {"timeout": 60000}
+      },
+      "id": "tiktok-001",
+      "name": "TikTok - Publicar Foto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 580],
+      "notes": "CONFIGURAR:\nReemplaza {TU_TIKTOK_ACCESS_TOKEN}\n\nRequiere TikTok Developer App con scope: video.publish\nhttps://developers.tiktok.com/\n\nIMPORTANTE: Apps sin auditar = privacy SELF_ONLY"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.x_image_url }}",
+        "options": {}
+      },
+      "id": "x-fetch-001",
+      "name": "X - Descargar Imagen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 820],
+      "notes": "Descarga la imagen adaptada para X/Twitter como dato binario."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://upload.twitter.com/1.1/media/upload.json",
+        "authentication": "oAuth1",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {"name": "media_data", "value": "={{ $binary.data.data }}"}
+          ]
+        },
+        "options": {"timeout": 30000}
+      },
+      "id": "x-upload-001",
+      "name": "X - Subir Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 820],
+      "notes": "CONFIGURAR:\nCrear credencial OAuth1 en n8n:\n- Consumer Key (API Key)\n- Consumer Secret (API Secret)\n- Access Token\n- Access Token Secret\n\nObtener en: https://developer.x.com/en/portal/dashboard\nPermisos: Read and Write + Media Upload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.x.com/2/tweets",
+        "authentication": "oAuth1",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('Extraer Campos').item.json.x_post) }},\n  \"media\": {\n    \"media_ids\": [\n      \"{{ $json.media_id_string }}\"\n    ]\n  }\n}",
+        "options": {"timeout": 30000}
+      },
+      "id": "x-tweet-001",
+      "name": "X - Publicar Tweet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 820],
+      "notes": "Publica el tweet con la imagen ya subida.\nUsa la misma credencial OAuth1 que X - Subir Media."
     }
   ],
   "connections": {
-    "Webhook Inicial": {
-      "main": [
-        [
-          {
-            "node": "Base64 to Binary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Webhook - Recibir Posts": {
+      "main": [[{"node": "Extraer Campos", "type": "main", "index": 0}]]
     },
-    "Base64 to Binary": {
-      "main": [
-        [
-          {
-            "node": "Facebook Pages",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Instagram for Business",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "TikTok (Custom)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "X (Twitter)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Extraer Campos": {
+      "main": [[{"node": "Distribuir a Redes", "type": "main", "index": 0}]]
+    },
+    "Distribuir a Redes": {
+      "main": [[
+        {"node": "Facebook - Publicar con Foto", "type": "main", "index": 0},
+        {"node": "Instagram - Crear Container", "type": "main", "index": 0},
+        {"node": "TikTok - Publicar Foto", "type": "main", "index": 0},
+        {"node": "X - Descargar Imagen", "type": "main", "index": 0}
+      ]]
+    },
+    "Instagram - Crear Container": {
+      "main": [[{"node": "Esperar 20s (IG procesa)", "type": "main", "index": 0}]]
+    },
+    "Esperar 20s (IG procesa)": {
+      "main": [[{"node": "Instagram - Publicar", "type": "main", "index": 0}]]
+    },
+    "X - Descargar Imagen": {
+      "main": [[{"node": "X - Subir Media", "type": "main", "index": 0}]]
+    },
+    "X - Subir Media": {
+      "main": [[{"node": "X - Publicar Tweet", "type": "main", "index": 0}]]
     }
   },
-  "settings": {}
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "triggerCount": 1
 }
