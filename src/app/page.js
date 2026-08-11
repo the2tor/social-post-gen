@@ -312,9 +312,18 @@ export default function Home() {
             </div>
 
             {/* Panel Derecho: Previsualización */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', borderRadius: '0.5rem', background: 'var(--surface)', padding: '1rem', minHeight: '200px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', borderRadius: '0.5rem', background: 'var(--surface)', padding: '1rem', minHeight: '200px' }}>
               {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="preview-image" style={{ maxHeight: '300px', width: 'auto', objectFit: 'contain' }} />
+                <>
+                  <img src={imagePreview} alt="Preview" className="preview-image" style={{ maxHeight: '260px', width: 'auto', objectFit: 'contain' }} />
+                  <button 
+                    className="btn btn-sm btn-secondary" 
+                    onClick={() => handleDownloadImage(imagePreview, 'imagen_generada')}
+                    style={{ marginTop: '0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    📥 Descargar Imagen Generada
+                  </button>
+                </>
               ) : (
                 <p style={{ color: 'var(--text-muted)' }}>La imagen seleccionada aparecerá aquí</p>
               )}

@@ -53,7 +53,7 @@
         "url": "https://graph.facebook.com/v23.0/{TU_PAGE_ID}/photos",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"url\": \"{{ $json.facebook_image_url }}\",\n  \"message\": {{ JSON.stringify($json.facebook_post) }},\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  \"url\": $json.facebook_image_url,\n  \"message\": $json.facebook_post,\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}) }}",
         "options": {"timeout": 30000}
       },
       "id": "facebook-post-001",
@@ -69,7 +69,7 @@
         "url": "https://graph.facebook.com/v23.0/{TU_IG_BUSINESS_ID}/media",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"image_url\": \"{{ $json.instagram_image_url }}\",\n  \"caption\": {{ JSON.stringify($json.instagram_post) }},\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  \"image_url\": $json.instagram_image_url,\n  \"caption\": $json.instagram_post,\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}) }}",
         "options": {"timeout": 30000}
       },
       "id": "ig-container-001",
@@ -96,7 +96,7 @@
         "url": "https://graph.facebook.com/v23.0/{TU_IG_BUSINESS_ID}/media_publish",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"creation_id\": \"{{ $('Instagram - Crear Container').item.json.id }}\",\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  \"creation_id\": $('Instagram - Crear Container').item.json.id,\n  \"access_token\": \"{TU_PAGE_ACCESS_TOKEN}\"\n}) }}",
         "options": {"timeout": 30000}
       },
       "id": "ig-publish-001",
@@ -119,7 +119,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"post_info\": {\n    \"title\": {{ JSON.stringify($json.tiktok_post.substring(0, 150)) }},\n    \"description\": {{ JSON.stringify($json.tiktok_post) }},\n    \"disable_comment\": false,\n    \"privacy_level\": \"SELF_ONLY\",\n    \"auto_add_music\": true\n  },\n  \"source_info\": {\n    \"source\": \"PULL_FROM_URL\",\n    \"photo_images\": [\n      \"{{ $json.tiktok_image_url }}\"\n    ]\n  },\n  \"media_type\": \"PHOTO\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  \"post_info\": {\n    \"title\": ($json.tiktok_post || '').substring(0, 150),\n    \"description\": $json.tiktok_post || '',\n    \"disable_comment\": false,\n    \"privacy_level\": \"SELF_ONLY\",\n    \"auto_add_music\": true\n  },\n  \"source_info\": {\n    \"source\": \"PULL_FROM_URL\",\n    \"photo_images\": [\n      $json.tiktok_image_url || ''\n    ]\n  },\n  \"media_type\": \"PHOTO\"\n}) }}",
         "options": {"timeout": 60000}
       },
       "id": "tiktok-001",
@@ -169,7 +169,7 @@
         "authentication": "oAuth1",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('Extraer Campos').item.json.x_post) }},\n  \"media\": {\n    \"media_ids\": [\n      \"{{ $json.media_id_string }}\"\n    ]\n  }\n}",
+        "jsonBody": "={{ JSON.stringify({\n  \"text\": $('Extraer Campos').item.json.x_post || '',\n  \"media\": {\n    \"media_ids\": [\n      $json.media_id_string\n    ]\n  }\n}) }}",
         "options": {"timeout": 30000}
       },
       "id": "x-tweet-001",

@@ -40,7 +40,7 @@ export async function POST(req) {
     const formData = new FormData();
     formData.append('image', blob, 'image.png');
     formData.append('prompt', prompt);
-    formData.append('model', 'gpt-image-2'); // El modelo nuevo que pediste
+    formData.append('model', 'dall-e-2'); // Modelo oficial para edición de imágenes
 
     // Generar la nueva imagen editada nativamente usando la foto subida como base
     const dalleResponse = await fetch("https://api.openai.com/v1/images/edits", {
@@ -51,7 +51,14 @@ export async function POST(req) {
       body: formData
     });
 
-    const dalleData = await dalleResponse.json();
+    const responseText = await dalleResponse.text();
+    let dalleData;
+    try {
+      dalleData = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Respuesta no válida de OpenAI (${dalleResponse.status}): ${responseText.slice(0, 150)}`);
+    }
+
     if (dalleData.error) throw new Error(dalleData.error.message);
     
     if (!dalleData.data || dalleData.data.length === 0) {

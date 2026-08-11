@@ -32,14 +32,21 @@ export async function POST(req) {
         "Authorization": `Bearer ${openAiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-image-2",
+        model: "dall-e-3",
         prompt: prompt,
         n: 1,
         size: "1024x1024"
       })
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Respuesta no válida de OpenAI (${response.status}): ${responseText.slice(0, 150)}`);
+    }
+
     if (data.error) throw new Error(data.error.message);
     
     if (!data.data || data.data.length === 0) {
